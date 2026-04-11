@@ -1,0 +1,252 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "$defs": {
+        "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+        },
+        "version_constraint": {
+            "type": "string",
+            "pattern": "^(>=|<=|>|<|~=)?\\s*[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+        },
+        "os_names": {
+            "type": "string",
+            "enum": [
+                "linux",
+                "macos",
+                "termux"
+            ]
+        },
+        "symlink_op": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "file",
+                        "directory"
+                    ]
+                },
+                "source": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "type",
+                "target"
+            ]
+        },
+        "path_dep": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dep_item": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "notes": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "required"
+            ]
+        }
+    },
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "version": {
+            "$ref": "#/$defs/version"
+        },
+        "install": {
+            "type": "object",
+            "propertyNames": {
+                "$ref": "#/$defs/os_names"
+            },
+            "properties": {
+                "linux": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/symlink_op"
+                    }
+                },
+                "macos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/symlink_op"
+                    }
+                },
+                "termux": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/symlink_op"
+                    }
+                }
+            },
+            "minProperties": 1
+        },
+        "deps": {
+            "type": "object",
+            "properties": {
+                "programs": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "version": {
+                                "$ref": "#/$defs/version_constraint"
+                            },
+                            "required": {
+                                "type": "boolean"
+                            },
+                            "notes": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name",
+                            "required"
+                        ]
+                    }
+                },
+                "configs": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "path": {
+                                "type": "string"
+                            },
+                            "required": {
+                                "type": "boolean"
+                            },
+                            "notes": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name",
+                            "required"
+                        ]
+                    }
+                }
+            },
+            "paths": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "required": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            },
+            "fonts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        },
+                        "required": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            },
+            "env": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/$defs/dep_item"
+                }
+            }
+        }
+    },
+    "upstream": {
+        "type": "object",
+        "properties": {
+            "repo": {
+                "type": "string"
+            },
+            "branch": {
+                "type": "string"
+            }
+        },
+        "required": [
+            "repo",
+            "branch"
+        ]
+    },
+    "hooks": {
+        "type": "object",
+        "properties": {
+            "pre_install": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "post_install": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "pre_uninstall": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "post_uninstall": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+        "minProperties": 1
+    },
+    "notes": {
+        "type": "string"
+    },
+    "required": [
+        "name",
+        "version",
+        "install"
+    ],
+    "additionalProperties": false
+}

@@ -1,0 +1,53 @@
+- $defs
+  - version: str | allowed: "^[0-9]+\\.[0-9]+(\\.[0-9])?$"
+  - os_names: str | allowed: ["linux", "macos", "android"]
+  - standard_install: object
+    - method: str | allowed: ["apt", "brew", "git", "termux-pkg"] **required**
+    - target: str **required**
+  - dep_item: object
+    - name: str **required**
+    - required: bool **required**
+
+- build_file.json: object
+  - name: str **required**
+  - description: str
+  - version: $defs:version **required**
+  - environments: object | minProperties=1 **required**
+    - supported: array | **required**
+      - items: $defs:os_names
+    - skip_on: array
+      - items: $defs:os_names
+  - deps: object
+    - programs: array
+      - items: object
+        - name: str **required**
+        - version: $defs:version
+        - required: bool **required**
+    - configs: array
+      - items: $defs:dep_item
+    - env: array
+      - items: $defs:dep_item
+  - install: object **required**
+    - linux: $defs:standard_install
+    - macos: $defs:standard_install
+    - termux: object
+      - method: str
+      - target: str
+      - prefix: str
+  - themes: array
+    - items: object
+      - name: str
+      - theme_dir: str
+  - upstream: object
+    - repo: str **required**
+    - branch: str **required**
+  - hooks: object
+    - pre_install: array
+      - items: str
+    - post_install: array
+      - items: str
+    - pre_uninstall: array
+      - items: str
+    - post_uninstall: array
+      - items: str
+  - notes: str
