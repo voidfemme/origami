@@ -21,7 +21,7 @@
         "symlink_op": {
             "type": "object",
             "properties": {
-                "type": {
+                "symlink_type": {
                     "type": "string",
                     "enum": [
                         "file",
