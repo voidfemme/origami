@@ -157,91 +157,102 @@
                             "required"
                         ]
                     }
-                }
-            },
-            "paths": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string"
-                        },
-                        "required": {
-                            "type": "boolean"
+                },
+                "paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string"
+                            },
+                            "required": {
+                                "type": "boolean"
+                            }
                         }
                     }
-                }
-            },
-            "fonts": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "required": {
-                            "type": "boolean"
+                },
+                "fonts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "required": {
+                                "type": "boolean"
+                            }
                         }
                     }
-                }
-            },
-            "env": {
-                "type": "array",
-                "items": {
-                    "$ref": "#/$defs/dep_item"
+                },
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/dep_item"
+                    }
                 }
             }
+        },
+        "upstream": {
+            "type": "object",
+            "properties": {
+                "repo": {
+                    "type": "string"
+                },
+                "branch": {
+                    "type": "string"
+                },
+                "commit": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string",
+                    "enum": [
+                        "github",
+                        "gitlab",
+                        "url"
+                    ]
+                }
+            },
+            "required": [
+                "repo",
+                "branch"
+            ]
+        },
+        "hooks": {
+            "type": "object",
+            "properties": {
+                "pre_install": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "post_install": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "pre_uninstall": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "post_uninstall": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "minProperties": 1
+        },
+        "notes": {
+            "type": "string"
         }
-    },
-    "upstream": {
-        "type": "object",
-        "properties": {
-            "repo": {
-                "type": "string"
-            },
-            "branch": {
-                "type": "string"
-            }
-        },
-        "required": [
-            "repo",
-            "branch"
-        ]
-    },
-    "hooks": {
-        "type": "object",
-        "properties": {
-            "pre_install": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                }
-            },
-            "post_install": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                }
-            },
-            "pre_uninstall": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                }
-            },
-            "post_uninstall": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                }
-            }
-        },
-        "minProperties": 1
-    },
-    "notes": {
-        "type": "string"
     },
     "required": [
         "name",

@@ -1,8 +1,8 @@
 from pathlib import Path
 from packaging.version import Version
 from jsonschema import SchemaError, ValidationError, validate as validate_json
-
 import json
+import logging
 
 from src.build_classes import (
     BuildFile,
@@ -14,8 +14,10 @@ from src.build_classes import (
     RepoUpstream,
     InstallHooks,
     InstallList,
-    SymlinkOp,
+    InstallEntry,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BuildLoader:
@@ -28,7 +30,8 @@ class BuildLoader:
             self.raw_data = self._load_and_validate(file_path)
             self.build = self._parse_to_dataclass(self.raw_data)
         except Exception as e:
-            print(e)
+            logger.error(e)
+            raise
 
     @classmethod
     def from_path(cls, path: Path | str) -> BuildFile:
@@ -41,37 +44,53 @@ class BuildLoader:
             return json.load(json_schema)
 
     def _load_and_validate(self, path: str | Path) -> dict:
-        # 1. Load JSON
-        with open(path) as json_data:
-            try:
+        # Load JSON
+        try:
+            with open(path) as json_data:
                 build_json = json.load(json_data)
-            except json.JSONDecodeError as e:
-                print(f"Malformed JSON: {e}")
-                raise
-            except FileNotFoundError as e:
-                print(f"File not found: {e}")
-                raise
-            except PermissionError as e:
-                print(f"Permission Error: {e}")
-                raise
-            except IsADirectoryError as e:
-                print(f"File is a directory: {e}")
-                raise
-            except Exception as e:
-                print(f"Other error: {e}")
-                raise
+        except FileNotFoundError as e:
+            logger.error(
+                f"File not found: {e}\n"
+                "Your origami.json is not in its expected location."
+            )
+            raise
+        except PermissionError as e:
+            logger.error(
+                f"Permission Error: {e}\nYou don't have permission to read origami.json"
+            )
+            raise
+        except IsADirectoryError as e:
+            logger.error(
+                f"File is a directory: {e}\n"
+                "Expected origami.json to be a json file, not a directory!"
+            )
+            raise
+        except json.JSONDecodeError as e:
+            logger.error(
+                f"Malformed JSON: {e}\nReview your build file's json for errors."
+            )
+            raise
 
-        # 2. validate(instance, schema)
+        # Regularize enums:
+        if "upstream" in build_json and "provider" in build_json["upstream"]:
+            build_json["upstream"]["provider"] = build_json["upstream"][
+                "provider"
+            ].lower()
+
+        # validate(instance, schema)
         try:
             validate_json(instance=build_json, schema=self.schema)
         except ValidationError as e:
-            print(f"Validation Error!\n{e}")
+            logger.error(
+                f"Validation Error: {e}\n"
+                "Validation failed. You probably have missing or incorrectly named fields in your origami.json"
+            )
             raise
         except SchemaError as e:
-            print(f"Schema Error: {e}")
-            raise
-        except Exception as e:
-            print(f"Other Error!\n{e}")
+            logger.error(
+                f"Schema Error: {e}\n"
+                "There is something wrong with the json schema, contact developer for support!"
+            )
             raise
 
         # 3. Return data if successful
@@ -94,9 +113,9 @@ class BuildLoader:
 
         # Install objects:
         install_raw: dict = data.get("install", {})
-        linux = [SymlinkOp(**l) for l in install_raw.get("linux", [])] or None
-        macos = [SymlinkOp(**m) for m in install_raw.get("macos", [])] or None
-        termux = [SymlinkOp(**t) for t in install_raw.get("termux", [])] or None
+        linux = [InstallEntry(**l) for l in install_raw.get("linux", [])] or None
+        macos = [InstallEntry(**m) for m in install_raw.get("macos", [])] or None
+        termux = [InstallEntry(**t) for t in install_raw.get("termux", [])] or None
         install_obj: InstallList | None = InstallList(
             linux=linux,
             macos=macos,

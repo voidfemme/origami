@@ -1,5 +1,6 @@
 from pathlib import Path
 import logging
+import subprocess
 
 from src.exceptions import UnsupportedOsError
 
@@ -42,8 +43,10 @@ class FontInstaller:
         # 4. Create the symlink (Handle existing links/files)
         try:
             if target_path.exists() or target_path.is_symlink():
-                if target_path.is_symlink() and target_path.readlink():
-                    logger.debug(f"Font {source_path.name} is already correctly linked")
+                if target_path.resolve() == source_path.resolve():
+                    logger.info(
+                        f"Font {source_path.name} is already correctly linked to {target_path.name}"
+                    )
                     return
                 else:
                     # If a different font/file exists there, back it up and remove it
@@ -56,9 +59,11 @@ class FontInstaller:
 
             # 5. Refresh font cache (Linux only)
             if self.operating_system == "linux":
-                import subprocess
-
                 subprocess.run(["fc-cache", "-f"], check=False)
+        except PermissionError:
+            raise
+        except OSError:
+            raise
         except Exception as e:
             logger.error(f"Error installing font: {e}")
-            print(f"Error installing font: {e}")  # TODO: remove this print statement
+            raise

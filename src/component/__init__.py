@@ -1,3 +1,3 @@
-from component import Component
-import installers
-import checkers
+from .component import Component
+from . import installers
+from . import checkers

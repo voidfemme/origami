@@ -1,13 +1,15 @@
 from pathlib import Path
 from packaging import version
 from packaging.version import Version
-from src.build_classes import BuildFile, SymlinkOp
-from src.exceptions import NoInstallationError
-from src.component.checkers.version_checker import VersionChecker
+from src.build_classes import BuildFile, InstallEntry
+from src.exceptions import NoInstallationError, VersionCheckerError
+from src.component.checkers.version_checker import VersionChecker, VersionStatus
 import shutil
+from typing import Literal
 import json
 import logging
 import subprocess
+import os
 
 logger = logging.getLogger(__file__)
 
@@ -28,21 +30,28 @@ class Installer:
         self.var_substitutions = var_substitutions
 
     def get_old_version(self, receipt_path: Path) -> str:
-        with open(receipt_path, "r") as f:
-            build_json = json.load(f)
+        try:
+            with open(receipt_path, "r") as f:
+                build_json = json.load(f)
+        except json.JSONDecodeError:
+            raise
+        except KeyError:
+            raise
         return build_json["version"]
 
-    def get_install_objects(self) -> list[SymlinkOp]:
+    def get_install_objects(self) -> list[InstallEntry]:
         installations = []
         if self.build_config.install:
             install = self.build_config.install
-            if install.linux:
+            if install.linux and self.operating_system == "linux":
                 for item in install.linux:
                     installations.append(item)
-            if install.macos:
+            if install.macos and (
+                self.operating_system == "macos" or self.operating_system == "darwin"
+            ):
                 for item in install.macos:
                     installations.append(item)
-            if install.termux:
+            if install.termux and self.operating_system == "termux":
                 for item in install.termux:
                     installations.append(item)
         if len(installations) > 0:
@@ -89,23 +98,37 @@ class Installer:
         except subprocess.CalledProcessError as e:
             logger.error(f"Hook '{stage}' failed with exit code {e.returncode}")
 
-    def apply_component(self, installation: SymlinkOp) -> None:
+    def apply_component(self, installation: InstallEntry) -> None:
+        # Check for install receipt path
         install_receipt_path = (
             self.origami_config
             / "installations"
             / self.theme
             / self.build_config.name
-            / self.build_config.name
+            / "install_receipt.json"
         )
 
-        version_checker = VersionChecker(
-            installation,
-            version.parse(self.build_config.version),
-            version.parse(self.get_old_version(install_receipt_path)),
-        )
+        # NOTE: Move version check into CLI later
+        first_install = not install_receipt_path.exists()
 
-        if not version_checker.check_version():
-            return
+        if not first_install:
+            version_checker = VersionChecker(
+                installation,
+                version.parse(self.build_config.version),
+                version.parse(self.get_old_version(install_receipt_path)),
+            )
+            status = version_checker.check_version()
+
+            if status == "upgrade":
+                logger.info(f"Upgrading {self.build_config.name}...")
+            elif status == "downgrade":
+                logger.info(f"Downgrading {self.build_config.name}...")
+            elif status == "reinstall":
+                logger.info(f"Reinstalling {self.build_config.name}...")
+            else:
+                raise VersionCheckerError(
+                    f"Unexpected version status for {self.build_config.name}"
+                )
 
         # PRE-INSTALL HOOK
         if self.build_config.hooks:
@@ -113,20 +136,21 @@ class Installer:
                 for hook in self.build_config.hooks.pre_install:
                     self._run_hook(hook, "pre-install")
 
-        source_path = Path(installation.source)
-        target_path = Path(installation.target)
+        source_path = Path(installation.source).expanduser()
+        target_path = Path(installation.target).expanduser()
+
         if not source_path.exists():
             raise FileNotFoundError(f"Source {source_path} does not exist.")
 
-        if target_path.exists():
+        if target_path.exists() or target_path.is_symlink():
             if target_path.is_symlink():
                 target_path.unlink()
+        else:
+            self.backup_config(target_path)
+            if target_path.is_dir():
+                shutil.rmtree(target_path)
             else:
-                self.backup_config(target_path)
-                if target_path.is_dir():
-                    shutil.rmtree(target_path)
-                else:
-                    target_path.unlink()
+                target_path.unlink()
 
         # 2. Create the Symlink
         try:
@@ -139,15 +163,22 @@ class Installer:
             )
 
             # Create and store the installation receipt
-            self.create_install_receipt(install_receipt_path, version_checker.v1)
-
-            # POST-INSTALL HOOK
-            if self.build_config.hooks:
-                if self.build_config.hooks.post_install:
-                    for hook in self.build_config.hooks.post_install:
-                        self._run_hook(hook, "post-install")
+            self.create_install_receipt(
+                install_receipt_path, version.parse(self.build_config.version)
+            )
             logger.info(f"Successfully linked {source_path} -> {target_path}")
         except PermissionError:
             logger.error(
                 f"Permission denied on {target_path}. Try running with higher privileges or check macOS Full Disk Access."
             )
+            raise
+        except OSError:
+            raise
+        except Exception as e:
+            logger.error(f"Other Exception: {e}")
+            raise
+
+        # POST-INSTALL HOOK
+        if self.build_config.hooks and self.build_config.hooks.post_install:
+            for hook in self.build_config.hooks.post_install:
+                self._run_hook(hook, "post-install")

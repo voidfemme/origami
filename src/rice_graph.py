@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from dataclasses import dataclass
 
-from src.build_classes import BuildFile, SymlinkOp
+from src.build_classes import BuildFile, InstallEntry
 from src.component import Component
 from src.conflict_classes import EnvConflict, RiceConflicts, TargetConflict
 
@@ -33,7 +33,7 @@ class RiceGraph:
         conflicts = self._detect_conflicts()
         return GraphResult(ordered_components=ordered, conflicts=conflicts)
 
-    def _get_os_installs(self, build: BuildFile) -> list[SymlinkOp]:
+    def _get_os_installs(self, build: BuildFile) -> list[InstallEntry]:
         return getattr(build.install, self.operating_system, None) or []
 
     def _build_edges(self) -> dict[str, set[str]]:
@@ -158,5 +158,5 @@ class RiceGraph:
                                 value_b=env.value,
                             )
                         )
-                    else:
-                        seen[var_name] = (env.value, build.name)
+                else:
+                    seen[var_name] = (env.value, build.name)

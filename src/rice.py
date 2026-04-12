@@ -1,11 +1,11 @@
-import logging
-import platform
-import os
 from pathlib import Path
+from src.build_loader import BuildLoader
 from src.component import Component
 from src.component.installers import Installer
-from src.build_loader import BuildLoader
 from src.rice_graph import RiceGraph
+import logging
+import os
+import platform
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,11 @@ class Rice:
         else:
             self.origami_config = Path(os.path.expanduser("~/.config/origami"))
         self.components: list[Component] = self.collect_components()
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, str):
+            return self.theme_name == other
+        return NotImplemented
 
     def apply_rice(self) -> None:
         rice_graph = RiceGraph(self.components, self.active_os).resolve()
@@ -63,8 +68,8 @@ class Rice:
 
     def collect_components(self) -> list[Component]:
         components = []
-        for component_dir in os.listdir(self.theme_path):
-            build_path = self.theme_path / component_dir / "build.json"
+        for dir in os.listdir(self.theme_path):
+            build_path = self.theme_path / dir / "origami.json"
             if not build_path.exists():
                 continue
             # Create Build File for each component

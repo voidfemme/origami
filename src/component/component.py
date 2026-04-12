@@ -1,8 +1,8 @@
-import logging
 from pathlib import Path
-from src.build_classes import BuildFile, FontDependency, SymlinkOp
+from src.build_classes import BuildFile, FontDependency, InstallEntry
 from src.component.checkers import DependencyChecker
 from src.component.installers import Installer, FontInstaller
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class Component:
                 self.build_config.deps, self.operating_system
             )
             self.font_installer = FontInstaller(self.operating_system)
-        self.installations: list[SymlinkOp] = self.installer.get_install_objects()
+        self.installations: list[InstallEntry] = self.installer.get_install_objects()
 
     def apply_all_components(self) -> None:
         for component in self.installations:

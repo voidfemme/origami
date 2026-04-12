@@ -1,0 +1,8 @@
+# origami.toml
+# Example configuration
+
+theme = "monokai"
+config_dir = "~/.config/origami"
+
+[defaults]
+os = "linux"

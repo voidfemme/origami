@@ -1,6 +1,15 @@
 import logging
 from src.build_classes import DependencyList, FontDependency
-from src.exceptions import MissingTermuxPrefixError
+from src.exceptions import (
+    MissingTermuxPrefixError,
+    ProgramNotFoundError,
+    ConfigNotFoundError,
+    PathNotFoundError,
+    FontNotFoundError,
+    RequiredEnvNotFoundError,
+    OptionalEnvNotFoundError,
+    UnsupportedOsError,
+)
 from pathlib import Path
 import os
 import shutil
@@ -16,31 +25,46 @@ class DependencyChecker:
         else:
             self.operating_system = operating_system.lower()
 
-    def verify_programs(self):
+    def verify_programs(self) -> None:
+        """
+        Raises: ProgramNotFoundError
+        """
         programs = self.dependencies.programs
         if programs:
             for program in programs:
                 if not shutil.which(program.name):
-                    return f"Program {program} does not exist."
+                    raise ProgramNotFoundError
 
-    def verify_configs(self):
+    def verify_configs(self) -> None:
+        """
+        Raises: ConfigNotFoundError
+        """
         configs = self.dependencies.configs
         if configs:
             for config in configs:
                 if not os.path.exists(config.path):
-                    return f"Config {config.name} does not exist at {config.path}"
+                    raise ConfigNotFoundError
 
-    def verify_paths(self) -> str | None:
+    def verify_paths(self) -> None:
+        """
+        Raises: PathNotFoundError
+        """
         # Do the source files exist in `$CORE`?
         paths = self.dependencies.paths
         if paths:
             for path in paths:
                 if not os.path.exists(path):
-                    return f"Path {path} does not exist."
+                    raise PathNotFoundError
 
     def _get_missing_fonts(
         self, fonts: list[FontDependency], font_dirs: list[Path]
     ) -> list[FontDependency]:
+        """
+        Params:
+            fonts: list[FontDependency] (list of fonts to check)
+            font_dirs: list[Path] (font directories to check against)
+        Returns: list[FontDependency] (a list of fonts from the `fonts` list that are not installed on the system)
+        """
         missing_fonts = set()
         found_fonts = set()
         for font in fonts:
@@ -55,6 +79,14 @@ class DependencyChecker:
         return list(missing_fonts)
 
     def verify_fonts(self, termux_prefix: Path | None = None) -> list[FontDependency]:
+        """
+        Params
+            termux_prefix: Path or None: (Optional parameter for defining the directory prefix in termux environments)
+        Returns
+            list[FontDependency]: a list of missing fonts contingent on the target OS
+        Raises
+            FontNotFoundError
+        """
         fonts = self.dependencies.fonts
         if fonts:
             if self.operating_system == "linux":
@@ -81,10 +113,15 @@ class DependencyChecker:
                 ]
                 return self._get_missing_fonts(fonts, macos_font_dirs)
             else:
-                return []
+                raise UnsupportedOsError
         return []
 
-    def verify_env_vars(self):
+    def verify_env_vars(self) -> None:
+        """
+        Raises
+            OptionalEnvNotFoundError
+            RequiredEnvNotFoundError
+        """
         envs = self.dependencies.env
         if envs:
             for env in envs:
@@ -94,20 +131,14 @@ class DependencyChecker:
                     if os.environ.get(env_var):
                         logger.info(f"Environment variable: ${env_var} exists...")
                     else:
-                        logger.info(
-                            f"Environment variable ${env_var} does not exist. Creating..."
-                        )
-                        if not env.value:
-                            os.environ[env_var] = input(
-                                f"Enter file path for {env_var}: "
-                            )
-                        else:
-                            os.environ[env_var] = env.value
+                        logger.error(f"Environment variable ${env_var} does not exist.")
+                        raise RequiredEnvNotFoundError
                 elif env.required == False:
-                    manually_define = input(
-                        f"WARNING: envrionment variable ${env_var} is missing, but not required. Would you like to define it manually? (y/n): "
-                    )
-                    if manually_define:
-                        os.environ[env_var] = input(
-                            f"Enter a value for variable ${env_var}: "
+                    if not os.environ.get(env_var):
+                        logger.warning(
+                            f"Optional environment variable ${env_var} does not exist. "
+                            f"Consider defining it using 'export {env_var}=\"<value>\"'"
                         )
+                        raise OptionalEnvNotFoundError
+                    else:
+                        logger.info(f"Optional environment variable ${env_var} exists!")

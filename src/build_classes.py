@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 @dataclass
-class SymlinkOp:
+class InstallEntry:
     type: str
     source: str
     target: str
@@ -11,9 +11,9 @@ class SymlinkOp:
 
 @dataclass
 class InstallList:
-    linux: list[SymlinkOp] | None = None  # fields: method, target
-    macos: list[SymlinkOp] | None = None  # fields: method, target
-    termux: list[SymlinkOp] | None = None  # fields: method, target, prefix
+    linux: list[InstallEntry] | None = None  # fields: method, target
+    macos: list[InstallEntry] | None = None  # fields: method, target
+    termux: list[InstallEntry] | None = None  # fields: method, target, prefix
 
 
 @dataclass
@@ -56,7 +56,9 @@ class DependencyList:
 @dataclass
 class RepoUpstream:
     repo: str
-    branch: str
+    branch: str | None
+    commit: str | None
+    provider: str | None
 
 
 @dataclass

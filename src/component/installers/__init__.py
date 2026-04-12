@@ -1,2 +1,2 @@
-from installer import Installer
-from font_installer import FontInstaller
+from .installer import Installer
+from .font_installer import FontInstaller
