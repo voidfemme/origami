@@ -120,4 +120,4 @@ pip install -r requirements.txt
 
 ## License
 
-TBD
+[WTFPL](./LICENSE)
