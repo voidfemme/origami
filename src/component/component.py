@@ -1,10 +1,24 @@
 from pathlib import Path
 from src.build_classes import BuildFile, FontDependency, InstallEntry
-from src.component.checkers import DependencyChecker
-from src.component.installers import Installer, FontInstaller
+from src.component.checkers.dependency_checker import DependencyChecker
+from src.component.installers.installer import Installer
+from src.component.installers.font_installer import FontInstaller
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_os(operating_system: str) -> str:
+    """Normalize OS string to a canonical value: linux | darwin | termux.
+
+    This is the single place OS normalization happens for the component layer.
+    All classes below Component receive an already-normalized string and should
+    not re-normalize.
+    """
+    os = operating_system.lower()
+    if os == "macos":
+        return "darwin"
+    return os
 
 
 class Component:
@@ -14,11 +28,10 @@ class Component:
         theme: str,
         build_config: BuildFile,
         origami_config: Path | None,
+        themes_dir: Path | str | None = None,
+        scripts_dir: Path | str | None = None,
     ) -> None:
-        if operating_system == "macos":
-            self.operating_system = "darwin"
-        else:
-            self.operating_system = operating_system.lower()
+        self.operating_system = normalize_os(operating_system)
 
         if not origami_config:
             self.origami_config = Path.home() / ".config/origami"
@@ -26,11 +39,16 @@ class Component:
             self.origami_config = origami_config
 
         self.theme = theme
-        self.origami_theme_path = self.origami_config / self.theme
-        self.origami_script_path = self.origami_config / "scripts"
+        self.themes_dir = (
+            Path(themes_dir) if themes_dir else self.origami_config / "themes"
+        )
+        self.scripts_dir = (
+            Path(scripts_dir) if scripts_dir else self.origami_config / "scripts"
+        )
+        self.origami_theme_path = self.themes_dir / self.theme
         self.build_config = build_config
         self.build_config_path = self.build_config.path
-        self.fonts_dir = self.origami_config / "themes" / self.theme / "fonts"
+        self.fonts_dir = self.themes_dir / self.theme / "fonts"
         self.installer = Installer(
             self.build_config,
             Path(self.origami_config),
@@ -60,18 +78,15 @@ class Component:
         return self.dependency_checker.verify_fonts()
 
     def apply_fonts(self) -> None:
-        if self.build_config.deps:
-            if self.build_config.deps.fonts:
-                for font in self.get_missing_fonts():
-                    if font:
-                        font_path = self.fonts_dir / font.name
-                        self.font_installer.install_font(font_path)
+        if self.build_config.deps and self.build_config.deps.fonts:
+            for font in self.get_missing_fonts():
+                if font:
+                    font_path = self.fonts_dir / font.name
+                    self.font_installer.install_font(font_path)
 
     def check_upstream(self) -> None:
         if self.build_config.upstream:
             pass
 
     def check_health(self):
-        # Do the _symlinks_ exist at their expected target locations? Do they point to the right place?
-        # Should I use a separate HealthChecker() object?
         pass

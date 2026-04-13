@@ -1,0 +1,13 @@
+{
+    "name": "test-bad-version",
+    "version": "not-a-version",
+    "install": {
+        "linux": [
+            {
+                "type": "symlink",
+                "source": "~/.config/origami/themes/test-rice/test-bad-version/config",
+                "target": "~/.config/test-bad-version/config"
+            }
+        ]
+    }
+}

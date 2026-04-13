@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from src.build_classes import BuildFile, InstallEntry
-from src.component import Component
+from src.component.component import Component
 from src.conflict_classes import EnvConflict, RiceConflicts, TargetConflict
 
 logger = logging.getLogger(__name__)

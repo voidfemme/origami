@@ -1,0 +1,74 @@
+{
+    "name": "test-component-full",
+    "description": "A fully-featured test component",
+    "version": "2.1.0",
+    "install": {
+        "linux": [
+            {
+                "type": "hardlink",
+                "source": "~/.config/origami/themes/test-rice/test-component-full/config",
+                "target": "~/.config/test-component-full/config"
+            }
+        ],
+        "macos": [
+            {
+                "type": "hardlink",
+                "source": "~/.config/origami/themes/test-rice/test-component-full/config",
+                "target": "~/.config/test-component-full/config"
+            }
+        ]
+    },
+    "deps": {
+        "programs": [
+            {
+                "name": "git",
+                "required": true,
+                "version": ">=2.0.0"
+            },
+            {
+                "name": "fzf",
+                "required": false,
+                "version": ">=0.0.0"
+            }
+        ],
+        "configs": [
+            {
+                "name": "nvim",
+                "path": "~/.config/nvim",
+                "required": true
+            }
+        ],
+        "fonts": [
+            {
+                "name": "JetBrainsMono",
+                "required": true
+            }
+        ],
+        "env": [
+            {
+                "name": "EDITOR",
+                "required": true,
+                "value": "nvim"
+            },
+            {
+                "name": "OPTIONAL_VAR",
+                "required": false,
+                "value": "optional_var"
+            }
+        ]
+    },
+    "upstream": {
+        "repo": "voidfemme/test-component-full",
+        "branch": "main",
+        "provider": "github"
+    },
+    "hooks": {
+        "pre_install": [
+            "echo pre-install"
+        ],
+        "post_install": [
+            "echo post-install"
+        ]
+    },
+    "notes": "This is a test fixture with all fields populated."
+}

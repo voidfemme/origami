@@ -1,18 +1,18 @@
 from pathlib import Path
 from src.build_loader import BuildLoader
-from src.component import Component
-from src.component.installers import Installer
+from src.component.component import Component
 from src.rice_graph import RiceGraph
 import logging
 import os
 import platform
+import subprocess
 
 logger = logging.getLogger(__name__)
 
 
 class Rice:
     def __init__(
-        self, theme_name: str, theme_path: Path, origami_config: Path | None
+        self, theme_name: str, theme_path: Path, origami_config: Path | None = None
     ) -> None:
         self.theme_name = theme_name
         self.theme_path = theme_path
@@ -22,11 +22,18 @@ class Rice:
         else:
             self.origami_config = Path(os.path.expanduser("~/.config/origami"))
         self.components: list[Component] = self.collect_components()
+        self.active: bool = False
 
     def __eq__(self, other) -> bool:
         if isinstance(other, str):
             return self.theme_name == other
         return NotImplemented
+
+    def activate(self) -> None:
+        self.active = True
+
+    def deactivate(self) -> None:
+        self.active = False
 
     def apply_rice(self) -> None:
         rice_graph = RiceGraph(self.components, self.active_os).resolve()
@@ -65,6 +72,11 @@ class Rice:
 
         for component in rice_graph.ordered_components:
             component.apply_all_components()
+
+    def delete_rice(self) -> None:
+        self.deactivate()
+        if self.theme_path.exists():
+            os.rmdir(self.theme_path)
 
     def collect_components(self) -> list[Component]:
         components = []

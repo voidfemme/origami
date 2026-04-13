@@ -1,0 +1,13 @@
+{
+    "name": "test-component",
+    "version": "1.0.0",
+    "install": {
+        "linux": [
+            {
+                "type": "hardlink",
+                "source": "~/.config/origami/themes/test-rice/test-component/config",
+                "target": "~/.config/test-component/config"
+            }
+        ]
+    }
+}

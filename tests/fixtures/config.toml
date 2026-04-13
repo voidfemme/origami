@@ -1,7 +1,5 @@
-# origami.toml
-# Example configuration
-
-theme = "monokai"
+# Test config.toml
+theme = "test-rice"
 config_dir = "~/.config/origami"
 scripts_dir = "~/.config/origami/scripts"
 themes_dir = "~/.config/origami/themes"

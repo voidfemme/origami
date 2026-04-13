@@ -24,8 +24,9 @@
                 "type": {
                     "type": "string",
                     "enum": [
-                        "file",
-                        "directory"
+                        "symlink",
+                        "hardlink",
+                        "auto"
                     ]
                 },
                 "source": {

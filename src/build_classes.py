@@ -16,10 +16,10 @@ class InstallList:
     termux: list[InstallEntry] | None = None  # fields: method, target, prefix
 
 
-@dataclass
+@dataclass(frozen=True)
 class FontDependency:
-    name: str
-    required: bool
+    name: str = field(compare=True)
+    required: bool = field(compare=True)
 
 
 @dataclass(frozen=True)
@@ -56,9 +56,9 @@ class DependencyList:
 @dataclass
 class RepoUpstream:
     repo: str
-    branch: str | None
-    commit: str | None
-    provider: str | None
+    branch: str | None = None
+    commit: str | None = None
+    provider: str | None = None
 
 
 @dataclass

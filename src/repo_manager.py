@@ -6,7 +6,7 @@ import subprocess
 class RepoManager:
     def __init__(self, upstream: RepoUpstream) -> None:
         self.provider = upstream.provider
-        self.repo = self._validate_repo(upstream.repo)
+        self.repo = self._validate_repo(upstream.repo, upstream.provider)
         self.branch = upstream.branch
         self.commit = upstream.commit
         self.url = self._resolve_upstream(
@@ -14,9 +14,11 @@ class RepoManager:
             repo=self.repo,
         )
 
-    def _validate_repo(self, repo: str | None) -> str | None:
+    def _validate_repo(self, repo: str | None, provider: str | None) -> str | None:
         if repo is None:
             return None
+        if provider is "url":
+            return repo
         parts = repo.split("/")
         if len(parts) != 2 or not parts[0] or not parts[1]:
             raise ValueError(

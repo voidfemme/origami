@@ -1,0 +1,13 @@
+{
+    "name": "test-component-termux",
+    "version": "1.0.0",
+    "install": {
+        "termux": [
+            {
+                "type": "symlink",
+                "source": "~/.config/origami/themes/test-rice/test-component-termux/config",
+                "target": "~/.config/test-component-termux/config"
+            }
+        ]
+    }
+}

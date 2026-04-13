@@ -19,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 class DependencyChecker:
     def __init__(self, dependencies: DependencyList, operating_system: str) -> None:
+        """
+        Params:
+            operating_system: canonical OS string (linux | darwin | termux).
+                              Normalization is handled upstream in Component.
+        """
         self.dependencies = dependencies
-        if operating_system == "macos":
-            self.operating_system = "darwin"
-        else:
-            self.operating_system = operating_system.lower()
+        self.operating_system = operating_system
 
     def verify_programs(self) -> None:
         """
@@ -49,7 +51,6 @@ class DependencyChecker:
         """
         Raises: PathNotFoundError
         """
-        # Do the source files exist in `$CORE`?
         paths = self.dependencies.paths
         if paths:
             for path in paths:
@@ -63,77 +64,77 @@ class DependencyChecker:
         Params:
             fonts: list[FontDependency] (list of fonts to check)
             font_dirs: list[Path] (font directories to check against)
-        Returns: list[FontDependency] (a list of fonts from the `fonts` list that are not installed on the system)
+        Returns:
+            list[FontDependency]: fonts from the input list not found in any font_dir
         """
-        missing_fonts = set()
-        found_fonts = set()
+        found_fonts: set[FontDependency] = set()
         for font in fonts:
             for dir in font_dirs:
-                if dir.exists():
-                    if any(dir.glob(f"{font.name}*")):
-                        print(f"Font {font.name} found in {dir}")
-                        found_fonts.add(font)
-        for font in fonts:
-            if font not in found_fonts:
-                missing_fonts.add(font)
-        return list(missing_fonts)
+                if dir.exists() and any(dir.glob(f"{font.name}*")):
+                    logger.debug(f"Font {font.name} found in {dir}")
+                    found_fonts.add(font)
+        return [font for font in fonts if font not in found_fonts]
 
     def verify_fonts(self, termux_prefix: Path | None = None) -> list[FontDependency]:
         """
-        Params
-            termux_prefix: Path or None: (Optional parameter for defining the directory prefix in termux environments)
-        Returns
-            list[FontDependency]: a list of missing fonts contingent on the target OS
-        Raises
-            FontNotFoundError
+        Params:
+            termux_prefix: optional prefix path for termux environments
+        Returns:
+            list[FontDependency]: missing fonts for the target OS
+        Raises:
+            MissingTermuxPrefixError
+            UnsupportedOsError
         """
         fonts = self.dependencies.fonts
-        if fonts:
-            if self.operating_system == "linux":
-                linux_font_dirs = [
-                    Path.home() / ".local/share/fonts",
-                    Path("/usr/share/fonts"),
-                    Path("/usr/local/share/fonts"),
-                ]
-                return self._get_missing_fonts(fonts, linux_font_dirs)
-            elif self.operating_system == "termux" and termux_prefix:
-                termux_font_dirs = [
-                    Path.home() / ".local/share/fonts",
-                    termux_prefix / "usr/share/fonts",
-                    termux_prefix / "usr/local/share/fonts",
-                ]
-                return self._get_missing_fonts(fonts, termux_font_dirs)
-            elif self.operating_system == "termux" and not termux_prefix:
+        if not fonts:
+            return []
+
+        if self.operating_system == "linux":
+            font_dirs = [
+                Path.home() / ".local/share/fonts",
+                Path("/usr/share/fonts"),
+                Path("/usr/local/share/fonts"),
+            ]
+            return self._get_missing_fonts(fonts, font_dirs)
+
+        elif self.operating_system == "termux":
+            if not termux_prefix:
                 raise MissingTermuxPrefixError
-            elif self.operating_system == "darwin":
-                macos_font_dirs = [
-                    Path.home() / "Library/Fonts",
-                    Path("/Library/Fonts"),
-                    Path("/System/Library/Fonts"),
-                ]
-                return self._get_missing_fonts(fonts, macos_font_dirs)
-            else:
-                raise UnsupportedOsError
-        return []
+            font_dirs = [
+                Path.home() / ".local/share/fonts",
+                termux_prefix / "usr/share/fonts",
+                termux_prefix / "usr/local/share/fonts",
+            ]
+            return self._get_missing_fonts(fonts, font_dirs)
+
+        elif self.operating_system == "darwin":
+            font_dirs = [
+                Path.home() / "Library/Fonts",
+                Path("/Library/Fonts"),
+                Path("/System/Library/Fonts"),
+            ]
+            return self._get_missing_fonts(fonts, font_dirs)
+
+        else:
+            raise UnsupportedOsError
 
     def verify_env_vars(self) -> None:
         """
-        Raises
-            OptionalEnvNotFoundError
+        Raises:
             RequiredEnvNotFoundError
+            OptionalEnvNotFoundError
         """
         envs = self.dependencies.env
         if envs:
             for env in envs:
                 env_var = env.name.replace("$", "").upper()
-                if env.required == True:
-                    # If the environment variable exists, return
+                if env.required:
                     if os.environ.get(env_var):
                         logger.info(f"Environment variable: ${env_var} exists...")
                     else:
                         logger.error(f"Environment variable ${env_var} does not exist.")
                         raise RequiredEnvNotFoundError
-                elif env.required == False:
+                else:
                     if not os.environ.get(env_var):
                         logger.warning(
                             f"Optional environment variable ${env_var} does not exist. "

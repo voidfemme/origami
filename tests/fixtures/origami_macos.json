@@ -1,0 +1,13 @@
+{
+    "name": "test-component-macos",
+    "version": "1.0.0",
+    "install": {
+        "macos": [
+            {
+                "type": "symlink",
+                "source": "~/.config/origami/themes/test-rice/test-component-macos/config",
+                "target": "~/.config/test-component-macos/config"
+            }
+        ]
+    }
+}

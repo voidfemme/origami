@@ -1,0 +1,21 @@
+{
+    "name": "test-component-hooks",
+    "version": "1.0.0",
+    "install": {
+        "linux": [
+            {
+                "type": "symlink",
+                "source": "~/.config/origami/themes/test-rice/test-component-hooks/config",
+                "target": "~/.config/test-component-hooks/config"
+            }
+        ]
+    },
+    "hooks": {
+        "pre_install": [
+            "echo pre-install-hook"
+        ],
+        "post_install": [
+            "echo post-install-hook"
+        ]
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "name": "conflict-component-b",
+    "version": "1.0.0",
+    "install": {
+        "linux": [
+            {
+                "type": "hardlink",
+                "source": "~/.config/origami/themes/test-rice/conflict-component-b/config",
+                "target": "/tmp/shared-conflict-target"
+            }
+        ]
+    }
+}
